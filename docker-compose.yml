@@ -1,0 +1,76 @@
+
+
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: cryptodb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: crypto_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data   # <-- corrigido aqui
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d cryptodb -h localhost"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 10
+
+  backend:
+    build: .
+    # se o seu entrypoint.sh já faz migrate/collectstatic e termina chamando o runserver,
+    # mantenha assim:
+    command: sh -c "./entrypoint.sh"
+    # ou, caso prefira simples: command: python manage.py runserver 0.0.0.0:3000
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  # Descomente quando quiser ligar o Celery:
+  celery_worker:
+    build: .
+    command: celery -A core worker -l info --concurrency=2
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+  celery_beat:
+    build: .
+    command: celery -A core beat -l info --scheduler django_celery_beat.schedulers:DatabaseScheduler
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+
+volumes:
+  postgres_data:

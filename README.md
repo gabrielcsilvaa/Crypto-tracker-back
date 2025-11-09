@@ -52,7 +52,7 @@ Infra:
 
 - Dockerfile, docker-compose.yml: subir tudo com DB/Redis/worker/beat.
 - .env.example: exemplo de variáveis.
-- entrypoint.sh: script de inicialização.
+- entrypoint.sh: script de inicialização(tem tanto o migrate quando o python manage runserver 0.0.0.1).
 - requirements.txt: dependências.
 
 ---
@@ -60,7 +60,6 @@ Infra:
 ⚙️ Como rodar
 
 ```bash
-cp .env.example .env
 docker-compose up --build
 ```
 
@@ -204,8 +203,6 @@ Background: Celery Beat pode pré-atualizar cache das top 100 moedas periodicame
 ---
 
 ⭐ Favoritos (sync)
-
-No frontend você mapeou os endpoints como favorites sob /portfolio. No backend as rotas podem estar agrupadas em portfolio/ (ex.: portfolio/favorites/). Abaixo, mantenho a forma namespaced:
 
 **GET portfolio/favorites/** (Auth)
 
